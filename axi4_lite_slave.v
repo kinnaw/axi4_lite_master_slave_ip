@@ -59,11 +59,20 @@ reg [ADDR_WIDTH-1:0]     wr_addr_lat;
 reg [DATA_WIDTH-1:0]     wr_data_lat;
 reg [(DATA_WIDTH/8)-1:0] wr_strb_lat;
 reg [2:0]                wr_prot_lat;
-reg                      wr_addr_ok;
-reg                      wr_addr_ro;
+
+
+wire [$clog2(MEM_DEPTH)-1:0] wr_word_addr;
+assign wr_word_addr = AWADDR[2 + $clog2(MEM_DEPTH)-1 : 2];
 
 wire wr_addr_unaligned;
-assign wr_addr_unaligned = (AWADDR[1:0] != 2'b00);
+assign wr_addr_unaligned = |AWADDR[1:0];
+
+wire wr_addr_ok;
+assign wr_addr_ok = (wr_word_addr < MEM_DEPTH);
+
+wire wr_addr_ro;
+assign wr_addr_ro = (wr_word_addr >= 10) && (wr_word_addr <= 12);
+
 
 always @(posedge ACLK) begin
     if (!ARESETn) begin
@@ -72,8 +81,7 @@ always @(posedge ACLK) begin
         wr_addr_lat <= {ADDR_WIDTH{1'b0}};
         wr_data_lat <= {DATA_WIDTH{1'b0}};
         wr_strb_lat <= {(DATA_WIDTH/8){1'b0}};
-        wr_addr_ok  <= 1'b0;
-        wr_addr_ro  <= 1'b0;
+     
         wr_prot_lat <= 3'b000;
     end else begin
         if (wr_state == W_RESP && BVALID && BREADY) begin
@@ -86,10 +94,6 @@ always @(posedge ACLK) begin
             wr_addr_lat <= AWADDR;
             wr_prot_lat <= AWPROT;
            
-            wr_addr_ok <= (AWADDR[ADDR_WIDTH-1:2] < MEM_DEPTH) && !wr_addr_unaligned;
-            wr_addr_ro  <= (AWADDR[ADDR_WIDTH-1:2] < MEM_DEPTH) &&
-                           (AWADDR[$clog2(MEM_DEPTH)+1:2] >= 10) &&
-                           (AWADDR[$clog2(MEM_DEPTH)+1:2] <= 12);
         end
         if (WVALID && WREADY) begin
             w_done      <= 1'b1;
@@ -189,12 +193,21 @@ localparam [1:0]
 reg [1:0] rd_state, n_rd_state;
 reg [ADDR_WIDTH-1:0] rd_addr_lat;
 reg [2:0]            rd_prot_lat;
-reg                  rd_addr_ok;
-reg                  rd_addr_wo;
+
  
 wire [$clog2(MEM_DEPTH)-1:0] rd_word_idx = rd_addr_lat[$clog2(MEM_DEPTH)+1:2];
-wire r_addr_unaligned;
-assign r_addr_unaligned = (ARADDR[1:0] != 2'b00);
+
+wire [$clog2(MEM_DEPTH)-1:0] rd_word_addr;
+assign rd_word_addr = ARADDR[2 + $clog2(MEM_DEPTH)-1 : 2];
+
+wire rd_addr_unaligned;
+assign rd_addr_unaligned = |ARADDR[1:0];
+
+wire rd_addr_ok;
+assign rd_addr_ok = (rd_word_addr < MEM_DEPTH);
+
+wire rd_addr_wo;
+assign rd_addr_wo = (rd_word_addr >= 13) && (rd_word_addr <= 14);
 
 always @(posedge ACLK) begin
     if (!ARESETn) rd_state <= R_IDLE;
@@ -220,8 +233,6 @@ always @(posedge ACLK) begin
         RDATA       <= {DATA_WIDTH{1'b0}};
         RRESP       <= RESP_OKAY;
         rd_addr_lat <= {ADDR_WIDTH{1'b0}};
-        rd_addr_ok  <= 1'b0;
-        rd_addr_wo  <= 1'b0;
         rd_prot_lat <= 3'b000;
     end else begin
         case (rd_state)
@@ -238,10 +249,7 @@ always @(posedge ACLK) begin
                     rd_addr_lat <= ARADDR;
                     rd_prot_lat <= ARPROT;
                     
-                    rd_addr_ok <= (ARADDR[ADDR_WIDTH-1:2] < MEM_DEPTH) && !r_addr_unaligned;
-                    rd_addr_wo  <= (ARADDR[ADDR_WIDTH-1:2] < MEM_DEPTH) &&
-                                   (ARADDR[$clog2(MEM_DEPTH)+1:2] >= 13) &&
-                                   (ARADDR[$clog2(MEM_DEPTH)+1:2] <= 14);
+                   
                     ARREADY     <= 1'b0;
  
                     
