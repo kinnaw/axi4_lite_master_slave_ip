@@ -160,8 +160,10 @@ always @(posedge ACLK or negedge ARESETn) begin
                 if (!BVALID) begin
                     if (!wr_addr_ok) begin
                         BRESP  <= RESP_DECERR;
+                       // reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= 0;
                     end else if (wr_addr_ro || wr_addr_unaligned) begin
                         BRESP  <= RESP_SLVERR;
+                        reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= 0;
                     end else begin
                         if (wr_strb_lat[0]) reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][ 7: 0] <= wr_data_lat[ 7: 0];
                         if (wr_strb_lat[1]) reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][15: 8] <= wr_data_lat[15: 8];
@@ -173,6 +175,7 @@ always @(posedge ACLK or negedge ARESETn) begin
                 end
                else if (BVALID && BREADY) BVALID <= 1'b0;
                 else begin
+                 //  reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]];
                   // BVALID <= BVALID;
 //                   reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][ 7: 0] <= reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][ 7: 0];
 //                   reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][15: 8] <= reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][15: 8];
@@ -246,16 +249,20 @@ always @(posedge ACLK or negedge ARESETn) begin
                     rd_prot_lat <= ARPROT;
 
 
-                    if (!rd_addr_ok)
+                    if (!rd_addr_ok)begin
                         RRESP <= RESP_DECERR;
-                    else if (rd_addr_wo || rd_addr_unaligned)
+                        RDATA <= 0;
+                    end
+                    else if (rd_addr_wo || rd_addr_unaligned) begin
                         RRESP <= RESP_SLVERR;
-                    else
+                        RDATA <= 0;
+                    end
+                    else begin
                         RRESP <= RESP_OKAY;
-
-                    RDATA <= reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]];
+                        RDATA <= reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]];
+                        
+                    end
                     RVALID <= 1'b1;
-
                     ARREADY <= 1'b0;
                 end
             end
