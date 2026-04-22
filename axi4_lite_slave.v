@@ -160,7 +160,7 @@ always @(posedge ACLK or negedge ARESETn) begin
                 if (!BVALID) begin
                     if (!wr_addr_ok) begin
                         BRESP  <= RESP_DECERR;
-                       // reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= 0;
+                        reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= 0;
                     end else if (wr_addr_ro || wr_addr_unaligned) begin
                         BRESP  <= RESP_SLVERR;
                         reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= 0;
@@ -175,7 +175,7 @@ always @(posedge ACLK or negedge ARESETn) begin
                 end
                else if (BVALID && BREADY) BVALID <= 1'b0;
                 else begin
-                 //  reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]];
+                   reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]] <= reg_file[ARADDR[$clog2(MEM_DEPTH)+1:2]];
                   // BVALID <= BVALID;
 //                   reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][ 7: 0] <= reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][ 7: 0];
 //                   reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][15: 8] <= reg_file[wr_addr_lat[$clog2(MEM_DEPTH)+1:2]][15: 8];
